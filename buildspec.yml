@@ -1,0 +1,41 @@
+version: 0.2
+
+env:
+  variables:
+    CONTAINER_NAME: "demo-microservice"
+    TAG: "latest"
+    AWS_CLUSTER_NAME: "demo-cluster"
+    REPOSITORY_URL: "339712706100.dkr.ecr.us-east-1.amazonaws.com"
+
+phases:
+   
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      # Log in to Amazon ECR using AWS CLI
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URL
+  build:
+    commands:
+      - echo Building Docker image...
+      # Build Docker image using the Dockerfile in your project
+      - docker build -t $CONTAINER_NAME .
+      # Push the Docker image to Amazon ECR
+      - docker tag $CONTAINER_NAME:latest $REPOSITORY_URL/$CONTAINER_NAME:$TAG
+      - docker push $REPOSITORY_URL/$CONTAINER_NAME:$TAG
+
+  post_build:
+    commands:
+      - echo Deploying to AWS EKS...
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $AWS_CLUSTER_NAME
+      - aws sts get-caller-identity
+
+      - echo Create Docker login secret on EKS...
+      - kubectl create secret docker-registry aws-ecr-credentials --docker-server=$REPOSITORY_URL --docker-username=AWS --docker-password="$(aws ecr get-login-password --region $AWS_DEFAULT_REGION)"
+
+      # Apply Kubernetes manifests (deployment, service, etc.) using kubectl
+      - kubectl apply -f $CODEBUILD_SRC_DIR/kubernetes/deployment.yml -n default
+      # Add more commands as needed for other Kubernetes manifests (e.g., ConfigMap, Ingress)
+      - kubectl get pods
+      - kubectl get svc
+      - kubectl get nodes
