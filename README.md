@@ -6,7 +6,7 @@ Developed by Hayford Owusu Ansah
 Security Considerations
 
 1. Validation :All request needed for the api call is thoroughly checked before processing is done.
-2. This application using Bearer Authentication to make sure that an unauthorized personnel does not have access to the Account Details and Fund Transfer APIS
+2. This application uses Bearer Authentication to make sure that an unauthorized personnel does not have access to the Account Details and Fund Transfer APIS
 3. Developers must use the username and password supplied in the postman collection to get their token.
 
 
